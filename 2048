@@ -1,0 +1,139 @@
+import random
+import copy
+
+# Constants
+SIZE = 4
+AI_DEPTH = 3
+
+# Directions
+UP, DOWN, LEFT, RIGHT = 0, 1, 2, 3
+
+# Initialize the board
+def initialize_board():
+    board = [[0] * SIZE for _ in range(SIZE)]
+    add_random_tile(board)
+    add_random_tile(board)
+    return board
+
+# Add a random tile (2 or 4)
+def add_random_tile(board):
+    empty_cells = [(r, c) for r in range(SIZE) for c in range(SIZE) if board[r][c] == 0]
+    if not empty_cells:
+        return
+    r, c = random.choice(empty_cells)
+    board[r][c] = 2 if random.random() < 0.9 else 4
+
+# Display the board
+def print_board(board):
+    for row in board:
+        print("+----" * SIZE + "+")
+        print("".join(f"|{cell:^4}" if cell != 0 else "|    " for cell in row) + "|")
+    print("+----" * SIZE + "+\n")
+
+# Check if any moves are possible
+def is_game_over(board):
+    for direction in [UP, DOWN, LEFT, RIGHT]:
+        if move_board(copy.deepcopy(board), direction):
+            return False
+    return True
+
+# Slide and merge tiles
+def slide_and_merge(row):
+    new_row = [value for value in row if value != 0]  # Remove zeros
+    for i in range(len(new_row) - 1):  # Merge equal values
+        if new_row[i] == new_row[i + 1]:
+            new_row[i] *= 2
+            new_row[i + 1] = 0
+    new_row = [value for value in new_row if value != 0]  # Remove zeros again
+    return new_row + [0] * (SIZE - len(new_row))
+
+# Move the board in a given direction
+def move_board(board, direction):
+    moved = False
+    for i in range(SIZE):
+        if direction in (LEFT, RIGHT):  # Horizontal moves
+            row = board[i][::-1] if direction == RIGHT else board[i]
+            new_row = slide_and_merge(row)
+            if new_row != row:
+                moved = True
+            board[i] = new_row[::-1] if direction == RIGHT else new_row
+        else:  # Vertical moves
+            col = [board[r][i] for r in range(SIZE)][::-1] if direction == DOWN else [board[r][i] for r in range(SIZE)]
+            new_col = slide_and_merge(col)
+            if new_col != col:
+                moved = True
+            for r in range(SIZE):
+                board[r][i] = new_col[::-1][r] if direction == DOWN else new_col[r]
+    return moved
+
+# Evaluate the score of the board
+def evaluate_board(board):
+    empty_cells = sum(row.count(0) for row in board)
+    max_tile = max(max(row) for row in board)
+    return empty_cells + math.log2(max_tile)  # Favor more empty cells and larger tiles
+
+# Minimax algorithm with depth
+def minimax(board, depth, maximizing):
+    if depth == 0 or is_game_over(board):
+        return evaluate_board(board)
+
+    if maximizing:
+        max_eval = float("-inf")
+        for direction in [UP, DOWN, LEFT, RIGHT]:
+            new_board = copy.deepcopy(board)
+            if move_board(new_board, direction):
+                eval = minimax(new_board, depth - 1, False)
+                max_eval = max(max_eval, eval)
+        return max_eval
+    else:
+        min_eval = float("inf")
+        for r in range(SIZE):
+            for c in range(SIZE):
+                if board[r][c] == 0:
+                    for tile in [2, 4]:
+                        new_board = copy.deepcopy(board)
+                        new_board[r][c] = tile
+                        eval = minimax(new_board, depth - 1, True)
+                        min_eval = min(min_eval, eval)
+        return min_eval
+
+# AI to find the best move
+def find_best_move(board):
+    best_score = float("-inf")
+    best_move = None
+    for direction in [UP, DOWN, LEFT, RIGHT]:
+        new_board = copy.deepcopy(board)
+        if move_board(new_board, direction):
+            score = minimax(new_board, AI_DEPTH, False)
+            if score > best_score:
+                best_score = score
+                best_move = direction
+    return best_move
+
+# Main game loop
+def play_game():
+    board = initialize_board()
+    print("Welcome to 2048! Use WASD keys to play or let the AI play.")
+    print_board(board)
+
+    while not is_game_over(board):
+        # Player or AI's turn
+        move = input("Your move (WASD) or 'AI': ").strip().upper()
+        if move == "AI":
+            move = find_best_move(board)
+        else:
+            move = {"W": UP, "A": LEFT, "S": DOWN, "D": RIGHT}.get(move)
+        if move is None or not move_board(board, move):
+            print("Invalid move!")
+            continue
+
+        # Add a random tile and print the board
+        add_random_tile(board)
+        print_board(board)
+
+    print("Game over! Final board:")
+    print_board(board)
+
+# Run the game
+if _name_ == "_main_":
+    play_game()
