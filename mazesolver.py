@@ -27,23 +27,42 @@ def solve_maze(maze, start, end):
 
     return None  # No path found
 
-# Example maze
-maze = [
-    ["S", ".", ".", "#", ".", ".", "."],
-    [".", "#", ".", "#", ".", "#", "."],
-    [".", "#", ".", ".", ".", "#", "."],
-    [".", ".", "#", "#", ".", "#", "."],
-    ["#", ".", "#", "E", ".", ".", "."],
-]
+def create_maze(rows, cols, obstacles):
+    # Initialize the maze with empty cells
+    maze = [["." for _ in range(cols)] for _ in range(rows)]
 
-start = (0, 0)  # Starting point (row, column)
-end = (4, 3)    # Ending point (row, column)
+    # Place obstacles in the maze
+    for x, y in obstacles:
+        maze[x][y] = "#"
 
-print("Maze:")
+    return maze
+
+# Input the maze dimensions
+rows = int(input("Enter the number of rows in the maze: "))
+cols = int(input("Enter the number of columns in the maze: "))
+
+# Input obstacles
+num_obstacles = int(input("Enter the number of obstacles: "))
+obstacles = []
+print("Enter the obstacle positions as row and column indices (e.g., 1 2):")
+for _ in range(num_obstacles):
+    x, y = map(int, input().split())
+    obstacles.append((x, y))
+
+# Input start and end points
+start = tuple(map(int, input("Enter the start point as row and column indices (e.g., 0 0): ").split()))
+end = tuple(map(int, input("Enter the end point as row and column indices (e.g., 4 3): ").split()))
+
+# Create the maze
+maze = create_maze(rows, cols, obstacles)
+maze[start[0]][start[1]] = "S"
+maze[end[0]][end[1]] = "E"
+
+print("\nMaze:")
 print_maze(maze)
 
+# Solve the maze
 path = solve_maze(maze, start, end)
-
 if path:
     print("\nPath Found:")
     for x, y in path:
@@ -51,4 +70,4 @@ if path:
             maze[x][y] = "O"
     print_maze(maze)
 else:
-    print("\nNo Path Found!")
+    print("\nNo Path Found!") 
